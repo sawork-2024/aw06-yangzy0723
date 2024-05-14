@@ -1,7 +1,9 @@
 package products.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import products.db.PosDB;
 import products.model.Product;
 
@@ -24,7 +26,10 @@ public class PosServiceImp implements ProductService {
 
     @Override
     public Product getProduct(String productId) {
-        return posDB.getProduct(productId);
+        Product p = posDB.getProduct(productId);
+        if(p == null)
+            throw new HttpClientErrorException(HttpStatusCode.valueOf(404));
+        return p;
     }
 
     @Override

@@ -94,9 +94,8 @@ public class JD implements PosDB {
     @Override
     public Product getProduct(String productId) {
         for (Product p : getProducts()) {
-            if (p.getPid().equals(productId)) {
+            if (p.getPid().equals(productId))
                 return p;
-            }
         }
         return null;
     }

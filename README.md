@@ -89,5 +89,19 @@ spring:
 
 可见水平扩展“订单管理”微服务对系统性能提升不大（1m17s -> 1m16s），水平扩展“产品管理”微服务较好地提升了系统性能（1m17s -> 45s），通过对高压力微服务组件（性能瓶颈）进行适当水平扩展，能增加计算资源利用率，实现“手术刀式”的系统优化。
 
-3. 请使用`RestTemplate`进行服务间访问，验证Client-side LB可行；
-4. 请注意使用断路器等机制；
+同时这也验证了`Client-side LB`的可行性。
+
+### 2.2 断路器
+
+在产品管理中尝试使用断路器机制，增强微服务的鲁棒性。在查找产品的过程中，我们可能尝试查找一个不存在的商品（`productId`不存在）。此时在传统方法中我们会返回一个`404 NOT FOUND`，这并不优雅，也反映了网站的鲁棒性并不好。利用断路器机制后，可以做到更为优雅的实现：
+
+- 首先在`posServiceImp`类中，若查找服务得到一个空结果，将throw一个`HttpClientErrorException`
+- 在`ProductController`类中，若断路器若catch到一个Exception，将激活断路器，返回一个预设的结果：
+  ```
+        circuitBreaker.run(
+            () -> ResponseEntity.ok(productMapper.toProductDto(posService.getProduct(productId))),
+            throwable -> ResponseEntity.ok(productMapper.toProductDto(new Product("null", "未找到任何产品", 0, "null", "null")))
+        );
+  ```
+- 最终结果如下所示：
+  ![](figs/7.png)

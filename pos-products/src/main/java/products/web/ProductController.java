@@ -1,5 +1,8 @@
 package products.web;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import products.mapper.ProductMapper;
@@ -18,6 +21,9 @@ public class ProductController implements ProductsServiceApi {
 
     private final ProductService posService;
     private final ProductMapper productMapper;
+
+    @Autowired
+    private CircuitBreakerFactory circuitBreakerFactory;
 
     // Constructor injection for service and mapper
     public ProductController(ProductMapper productMapper, ProductService posService) {
@@ -63,7 +69,12 @@ public class ProductController implements ProductsServiceApi {
     @GetMapping("/products/{productId}")
     @CrossOrigin(value = "*", maxAge = 1800, allowedHeaders = "*")
     public ResponseEntity<ProductDto> showProductById(@PathVariable String productId) {
-        return ResponseEntity.ok(productMapper.toProductDto(posService.getProduct(productId)));
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitBreaker");
+        return circuitBreaker.run(
+                () -> ResponseEntity.ok(productMapper.toProductDto(posService.getProduct(productId))),
+                throwable -> ResponseEntity.ok(productMapper.toProductDto(new Product("null", "未找到任何产品", 0, "null", "null", 0, 0)))
+        );
+//        return ResponseEntity.ok(productMapper.toProductDto(posService.getProduct(productId)));
     }
 
 
